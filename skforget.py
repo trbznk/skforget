@@ -26,13 +26,13 @@ def shape(l):
     return tuple(s)
 
 
-def make_regression(n_samples=100, n_features=1):
+def make_regression(n_samples=100, n_features=1, noise_std=5):
     a = [random.uniform(-100, 100) for _ in range(n_features+1)] # +1 for bias
     X, Y = [], []
     for sample_number in range(n_samples):
         x = [random.gauss(0, 1) for _ in range(n_features)]
         y = linear_function(x, a)
-        noise = random.gauss(0, 1)
+        noise = random.gauss(0, noise_std)
         y += noise
         X.append(x)
         Y.append(y)
@@ -77,6 +77,7 @@ class LinearRegression:
         n_features = len(X[0])
         self.a_ = [random.gauss(0, 1) for _ in range(n_features+1)]
         
+        last_loss = None
         for epoch in range(epochs):
             ga = [0]*len(self.a_)
             running_loss = 0
@@ -90,6 +91,14 @@ class LinearRegression:
                 self.a_[i] = self.a_[i]-self.lr*(2/n)*ga[i]
             running_loss = running_loss/n
             print(f"({epoch+1}) loss: {running_loss:.2f}")
+
+            if last_loss is None:
+                last_loss = running_loss
+            elif abs(running_loss-last_loss)/last_loss < 0.001:
+                break
+            else:
+                last_loss = running_loss
+
 
     def predict(self, X):
         Y = [linear_function(x, self.a_) for x in X]
