@@ -10,12 +10,32 @@ def mse(Y_true, Y_pred):
     return loss
 
 
-def make_regression(n=100) -> tuple[list[float], list[float]]:
-    a0 = random.random()
-    a1 = random.random()
-    h = lambda x: a1*x+a0
-    X = [random.random() for _ in range(n)]
-    Y = [h(x) for x in X]
+def linear_function(x, a):
+    y = a[0]
+    for i in range(len(x)):
+        y += a[i+1]*x[i]
+    return y
+
+
+def shape(l):
+    s = []
+    temp_l = l
+    while isinstance(temp_l, list):
+        s.append(len(temp_l))
+        temp_l = temp_l[0]
+    return tuple(s)
+
+
+def make_regression(n_samples=100, n_features=1):
+    a = [random.uniform(-100, 100) for _ in range(n_features+1)] # +1 for bias
+    X, Y = [], []
+    for sample_number in range(n_samples):
+        x = [random.gauss(0, 1) for _ in range(n_features)]
+        y = linear_function(x, a)
+        noise = random.gauss(0, 1)
+        y += noise
+        X.append(x)
+        Y.append(y)
     return X, Y
 
 
@@ -52,38 +72,35 @@ class LinearRegression:
     def __init__(self, lr=0.1):
         self.lr = lr
 
-    def _h(self, x):
-        return self.a1_*x+self.a0_
-
-    def fit(self, X, Y, epochs=10):
+    def fit(self, X, Y, epochs=100):
         n = len(X)
-        self.a0_ = random.random()
-        self.a1_ = random.random()
-
+        n_features = len(X[0])
+        self.a_ = [random.gauss(0, 1) for _ in range(n_features+1)]
+        
         for epoch in range(epochs):
-            ga0 = 0
-            ga1 = 0
+            ga = [0]*len(self.a_)
             running_loss = 0
             for x, y in zip(X, Y):
-                y_pred = self._h(x)
+                y_pred = linear_function(x, self.a_)
                 running_loss += (y_pred-y)**2
-                ga0 += y_pred-y
-                ga1 += (y_pred-y)*x
-            self.a0_ = self.a0_-self.lr*(2/n)*ga0
-            self.a1_ = self.a1_-self.lr*(2/n)*ga1
+                ga[0] += y_pred-y
+                for i in range(1, len(ga)):
+                    ga[i] += (y_pred-y)*x[i-1]
+            for i in range(len(self.a_)):
+                self.a_[i] = self.a_[i]-self.lr*(2/n)*ga[i]
             running_loss = running_loss/n
             print(f"({epoch+1}) loss: {running_loss:.2f}")
 
     def predict(self, X):
-        Y = [self._h(x) for x in X]
+        Y = [linear_function(x, self.a_) for x in X]
         return Y
 
 
-X, Y = make_regression()
+X, Y = make_regression(n_samples=1000, n_features=10)
 X_train, X_test, Y_train, Y_test = data_split(X, Y, [0.8, 0.2])
-print(len(X_train), len(X_test), len(Y_train), len(Y_test))
+print(shape(X_train), shape(X_test), shape(Y_train), shape(Y_test))
 reg = LinearRegression()
 reg.fit(X_train, Y_train)
 Y_pred = reg.predict(X_train)
 loss = mse(Y_train, Y_pred)
-print(loss)
+print(f"MSE: {loss:.2f}")
