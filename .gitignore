@@ -1,2 +1,5 @@
 *.pyc
 t.py
+.ipynb_checkpoints
+t.ipynb
+train.csv
